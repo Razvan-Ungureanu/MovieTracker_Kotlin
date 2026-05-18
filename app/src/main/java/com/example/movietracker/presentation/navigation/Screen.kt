@@ -1,0 +1,11 @@
+package com.example.movietracker.presentation.navigation
+
+sealed class Screen(val route: String) {
+    data object MovieList : Screen("movie_list")
+    data object MovieDetail : Screen("movie_detail/{movieId}") {
+        fun createRoute(movieId: Int): String {
+            return "movie_detail/$movieId"
+        }
+    }
+    data object Favorites : Screen("favorites")
+}

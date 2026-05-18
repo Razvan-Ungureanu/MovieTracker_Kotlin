@@ -1,0 +1,58 @@
+package com.example.movietracker.presentation.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.movietracker.presentation.favorites.FavoritesScreen
+import com.example.movietracker.presentation.movie_detail.MovieDetailScreen
+import com.example.movietracker.presentation.movie_list.MovieListScreen
+
+@Composable
+fun AppNavGraph() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.MovieList.route
+    ) {
+        composable(route = Screen.MovieList.route) {
+            MovieListScreen(
+                onMovieClick = { movieId ->
+                    navController.navigate(Screen.MovieDetail.createRoute(movieId))
+                },
+                onFavoritesClick = {
+                    navController.navigate(Screen.Favorites.route)
+                }
+            )
+        }
+
+        composable(
+            route = Screen.MovieDetail.route,
+            arguments = listOf(
+                navArgument("movieId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getInt("movieId") ?: return@composable
+
+            MovieDetailScreen(
+                movieId = movieId,
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.Favorites.route) {
+            FavoritesScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
