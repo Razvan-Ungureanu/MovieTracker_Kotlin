@@ -34,10 +34,16 @@ fun MovieListScreen(
 
     MovieListContent(
         uiState = uiState,
-        onQueryChanged = viewModel::onQueryChanged,
-        onSearchClick = viewModel::searchMovies,
+        onQueryChanged = { query ->
+            viewModel.onEvent(MovieListUiEvent.QueryChanged(query))
+        },
+        onSearchClick = {
+            viewModel.onEvent(MovieListUiEvent.SearchClicked)
+        },
         onMovieClick = onMovieClick,
-        onFavoriteClick = viewModel::toggleFavorite,
+        onFavoriteClick = { movie ->
+            viewModel.onEvent(MovieListUiEvent.FavoriteClicked(movie))
+        },
         onFavoritesClick = onFavoritesClick
     )
 }

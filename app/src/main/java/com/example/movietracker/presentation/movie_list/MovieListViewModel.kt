@@ -1,10 +1,10 @@
 package com.example.movietracker.presentation.movie_list
 
+import MovieListUiEvent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.movietracker.data.repository.FakeMovieRepository
+import com.example.movietracker.di.AppContainer
 import com.example.movietracker.domain.model.Movie
-import com.example.movietracker.domain.usecase.SearchMoviesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,26 +13,36 @@ import kotlinx.coroutines.launch
 
 class MovieListViewModel : ViewModel() {
 
-    private val searchMoviesUseCase = SearchMoviesUseCase(
-        repository = FakeMovieRepository()
-    )
+    private val searchMoviesUseCase = AppContainer.searchMoviesUseCase
+    private val toggleFavoriteMovieUseCase = AppContainer.toggleFavoriteMovieUseCase
 
     private val _uiState = MutableStateFlow(MovieListUiState())
     val uiState: StateFlow<MovieListUiState> = _uiState.asStateFlow()
 
-    fun onQueryChanged(query: String) {
-        _uiState.update {
-            it.copy(query = query)
+    fun onEvent(event: MovieListUiEvent) {
+        when (event) {
+            is MovieListUiEvent.QueryChanged -> {
+                _uiState.update {
+                    it.copy(query = event.query)
+                }
+            }
+
+            MovieListUiEvent.SearchClicked -> {
+                searchMovies()
+            }
+
+            is MovieListUiEvent.FavoriteClicked -> {
+                toggleFavorite(event.movie)
+            }
+
+            is MovieListUiEvent.MovieClicked -> Unit
         }
     }
 
-    fun searchMovies() {
+    private fun searchMovies() {
         viewModelScope.launch {
             _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null
-                )
+                it.copy(isLoading = true)
             }
 
             val result = searchMoviesUseCase(_uiState.value.query)
@@ -42,34 +52,35 @@ class MovieListViewModel : ViewModel() {
                     _uiState.update {
                         it.copy(
                             movies = movies,
-                            isLoading = false,
-                            errorMessage = null
+                            isLoading = false
                         )
                     }
                 }
-                .onFailure { error ->
+                .onFailure {
                     _uiState.update {
                         it.copy(
-                            movies = emptyList(),
-                            isLoading = false,
-                            errorMessage = error.message ?: "Something went wrong"
+                            isLoading = false
                         )
                     }
                 }
         }
     }
 
-    fun toggleFavorite(movie: Movie) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                movies = currentState.movies.map {
-                    if (it.id == movie.id) {
-                        it.copy(isFavorite = !it.isFavorite)
-                    } else {
-                        it
+    private fun toggleFavorite(movie: Movie) {
+        viewModelScope.launch {
+            toggleFavoriteMovieUseCase(movie)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    movies = currentState.movies.map { currentMovie ->
+                        if (currentMovie.id == movie.id) {
+                            currentMovie.copy(isFavorite = !currentMovie.isFavorite)
+                        } else {
+                            currentMovie
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
