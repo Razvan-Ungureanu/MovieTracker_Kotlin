@@ -45,11 +45,27 @@ class FakeMovieRepository : MovieRepository {
     override suspend fun searchMovies(query: String): Result<List<Movie>> {
         delay(500)
 
-        val filteredMovies = movies.value.filter {
-            it.title.contains(query, ignoreCase = true)
+        val filteredMovies = movies.value.filter { movie ->
+            movie.title.contains(query, ignoreCase = true)
         }
 
         return Result.success(filteredMovies)
+    }
+
+    override suspend fun getMovieById(movieId: Int): Result<Movie> {
+        delay(300)
+
+        val movie = movies.value.find { movie ->
+            movie.id == movieId
+        }
+
+        return if (movie != null) {
+            Result.success(movie)
+        } else {
+            Result.failure(
+                IllegalArgumentException("Movie not found")
+            )
+        }
     }
 
     override suspend fun toggleFavorite(movie: Movie) {
